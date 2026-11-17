@@ -1,0 +1,426 @@
+<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"></head><body style="margin:0">
+<title>Diagnóstico do Negócio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: coluna única centrada, uma etapa por ecrã, cartões navy sobre fundo navy, chips de escolha */
+:root {
+  --bg: #002336;
+  --card: #072235;
+  --line: #11486F;
+  --blue: #0096FF;
+  --blue-ink: #FFFFFF;
+  --fg: #FFFFFF;
+  --soft: #B8C7D6;
+  --mute: #7F97AD;
+  --err: #FF8A8A;
+  --display: "Anton", "Arial Narrow", Impact, sans-serif;
+  --body: "Barlow", "Segoe UI", Arial, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--fg); }
+body { font-family: var(--body); font-size: 17px; line-height: 1.5; }
+.wrap {
+  max-width: 680px; margin: 0 auto;
+  padding-block: 20px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 28px; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.logo { width: 44px; height: 44px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--card); display: grid; place-items: center; overflow: hidden; flex: none; }
+.logo span { font-family: var(--display); color: var(--blue); font-size: 20px; letter-spacing: .02em; }
+.logo img { width: 100%; height: 100%; object-fit: contain; }
+.brand b { display: block; font-weight: 700; font-size: 16px; line-height: 1.2; }
+.brand small { color: var(--soft); font-size: 13px; }
+.lang { display: inline-flex; border: 1.5px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; }
+.lang button { font: 600 13px var(--body); color: var(--soft); background: none; border: 0; border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.lang button[aria-pressed="true"] { background: var(--blue); color: var(--blue-ink); }
+
+.progress { margin-bottom: 22px; }
+.progress .meta { display: flex; justify-content: space-between; font-size: 13px; color: var(--soft); margin-bottom: 8px; font-variant-numeric: tabular-nums; }
+.bar { height: 6px; border-radius: 99px; background: var(--card); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--blue); border-radius: 99px; transition: width .3s ease; }
+
+h1, h2 { font-family: var(--display); font-weight: 400; line-height: 1.08; margin: 0; text-wrap: balance; letter-spacing: .005em; }
+h1 { font-size: clamp(34px, 8vw, 48px); }
+h1 em, h2 em { font-style: normal; color: var(--blue); }
+h2 { font-size: clamp(28px, 6.5vw, 38px); }
+.lead { color: var(--soft); margin: 12px 0 0; max-width: 60ch; }
+.points { display: grid; gap: 10px; margin: 26px 0 30px; padding: 0; list-style: none; }
+.points li { display: flex; gap: 12px; align-items: flex-start; color: var(--fg); }
+.points li::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--blue); margin-top: 8px; flex: none; }
+
+.q { border-top: 1px solid var(--line); padding: 22px 0 4px; }
+.q:first-of-type { border-top: 0; }
+.q > .label { display: block; font-weight: 700; font-size: 18px; line-height: 1.35; margin-bottom: 4px; }
+.q .req { color: var(--blue); }
+.q .help { display: block; color: var(--mute); font-size: 14.5px; margin-bottom: 10px; }
+.q .label + .chips, .q .label + input, .q .label + textarea { margin-top: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { position: relative; }
+.chip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.chip span { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 9px 15px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--card); color: var(--fg); font-size: 15.5px; line-height: 1.3; cursor: pointer; transition: border-color .15s, background .15s; }
+.chip span::before { content: ""; width: 16px; height: 16px; flex: none; border: 1.5px solid var(--mute); border-radius: 50%; }
+.chip input[type="checkbox"] + span::before { border-radius: 4px; }
+.chip input:checked + span { border-color: var(--blue); background: rgba(0, 150, 255, .14); }
+.chip input:checked + span::before { background: var(--blue); border-color: var(--blue); box-shadow: inset 0 0 0 3px var(--card); }
+.chip input:focus-visible + span { outline: 2px solid var(--blue); outline-offset: 2px; }
+.chip span:hover { border-color: var(--blue); }
+
+input[type="text"], input[type="tel"], input[type="email"], textarea {
+  width: 100%; font: 400 16.5px var(--body); color: var(--fg); background: var(--card);
+  border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 14px;
+}
+textarea { min-height: 96px; resize: vertical; }
+input::placeholder, textarea::placeholder { color: var(--mute); }
+input:focus, textarea:focus { outline: none; border-color: var(--blue); }
+.other { margin-top: 10px; }
+.err { color: var(--err); font-size: 14px; margin-top: 8px; }
+.note { color: var(--mute); font-size: 13.5px; margin-top: 8px; }
+
+.nav { display: flex; gap: 12px; justify-content: space-between; margin-top: 30px; flex-wrap: wrap; }
+.btn { font: 700 16px var(--body); border-radius: 12px; padding: 14px 22px; min-height: 50px; cursor: pointer; border: 1.5px solid var(--blue); }
+.btn.primary { background: var(--blue); color: var(--blue-ink); }
+.btn.ghost { background: transparent; color: var(--fg); border-color: var(--line); }
+.btn:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.btn.primary:hover { filter: brightness(1.08); }
+.nav .btn.primary { margin-left: auto; }
+
+.done-box { background: var(--card); border: 1.5px solid var(--line); border-radius: 16px; padding: 20px; margin-top: 24px; display: grid; gap: 14px; }
+.done-box .btn { width: 100%; text-align: center; text-decoration: none; display: inline-flex; justify-content: center; align-items: center; }
+.done-box pre { white-space: pre-wrap; word-break: break-word; font: 400 14px/1.5 var(--body); color: var(--soft); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 14px; max-height: 280px; overflow: auto; margin: 0; user-select: all; }
+.status { font-size: 14.5px; color: var(--soft); }
+.foot { margin-top: 40px; color: var(--mute); font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="logo" id="logo"><span>FB</span></div>
+      <div><b>Fábio Belmar</b><small>Gestor de Tráfego</small></div>
+    </div>
+    <div class="lang" role="group" aria-label="Idioma">
+      <button type="button" id="lang-br" data-lang="br" aria-pressed="false">Brasil</button>
+      <button type="button" id="lang-pt" data-lang="pt" aria-pressed="false">Portugal</button>
+    </div>
+  </header>
+  <main id="app" aria-live="polite"></main>
+  <p class="foot" id="foot"></p>
+</div>
+
+<script>
+/* ====== CONFIGURAÇÃO (edite aqui) ====== */
+const CONFIG = {
+  WHATSAPP: "",        // o seu número com indicativo, só dígitos. Ex.: "351912345678"
+  FORMSPREE_ID: "",    // opcional: ID do formulário Formspree (ex.: "xyzabcd") para receber por e-mail
+  LOGO_URL: ""         // opcional: caminho do logo (ex.: "logo.png"). Vazio mostra "FB"
+};
+/* ======================================= */
+
+const L = (br, pt) => ({ br, pt: pt ?? br });
+const opts = (...xs) => xs.map((x, i) => typeof x === "string" ? { k: String(i), l: L(x) } : { k: x.k ?? String(i), l: x.l ?? L(x.br, x.pt) });
+const money = (br, pt) => ({ br: br.map((x, i) => ({ k: String(i), l: L(x) })), pt: pt.map((x, i) => ({ k: String(i), l: L(x) })) });
+const has = (a, id, k) => (a[id] || []).includes(k);
+const svc = (a, ...ks) => ks.some(k => has(a, "servicos", k));
+
+const STEPS = [
+  { t: L("O seu <em>negócio</em>"), qs: [
+    { id: "negocio", type: "text", req: true, s: L("Negócio"), l: L("Nome do negócio") },
+    { id: "ramo", type: "single", other: true, s: L("Ramo"), l: L("Qual é o ramo do negócio?"),
+      o: opts("Saúde ou clínica", "Estética e beleza", "Fitness e bem-estar", "Restaurante, café ou alimentação", "Loja física ou online", "Serviços profissionais (advocacia, contabilidade, consultoria)", "Educação e cursos", "Imobiliário", { k: "outro", br: "Outro" }) },
+    { id: "local", type: "text", s: L("Local"), l: L("Cidade e país onde atende"), ph: L("Ex.: Manaus, Brasil", "Ex.: Porto, Portugal") },
+    { id: "tempo", type: "single", s: L("Tempo de atividade"), l: L("Há quanto tempo o negócio existe?"),
+      o: opts("Menos de 1 ano", "1 a 3 anos", "3 a 10 anos", "Mais de 10 anos") },
+    { id: "equipa", type: "single", s: L("Equipe", "Equipa"), l: L("Quantas pessoas atendem os clientes?"),
+      o: opts("Só eu", "2 a 5 pessoas", "6 a 20 pessoas", "Mais de 20") },
+    { id: "servico", type: "textarea", s: L("Serviço prioritário"), l: L("Que produto ou serviço mais quer vender?"),
+      h: L("O que dá mais lucro ou o que tem mais vagas para preencher."), ph: L("Ex.: implante dentário, manicure em gel, plano mensal...") },
+    { id: "ticket", type: "single", s: L("Preço médio"), l: L("Quanto custa, em média, esse produto ou serviço?"),
+      o: money(["Até R$ 100", "R$ 100 a R$ 300", "R$ 300 a R$ 800", "R$ 800 a R$ 2.000", "Mais de R$ 2.000"],
+               ["Até 30 €", "30 € a 80 €", "80 € a 200 €", "200 € a 500 €", "Mais de 500 €"]) },
+    { id: "capacidade", type: "single", s: L("Capacidade"), l: L("Quantos clientes novos consegue atender por mês, além dos atuais?"),
+      o: opts("Até 10", "10 a 30", "30 a 100", "Mais de 100", "Não sei") }
+  ]},
+  { t: L("Como está <em>hoje</em>"), qs: [
+    { id: "origem", type: "multi", other: true, s: L("Origem dos clientes"), l: L("De onde vêm os seus clientes hoje?"), h: L("Pode escolher mais de uma opção."),
+      o: opts("Indicação de outros clientes", "Instagram ou Facebook, sem anúncios", "Pesquisa no Google ou Google Maps", "Anúncios pagos", "Passagem pela porta", "Parcerias", { k: "outro", br: "Outro" }) },
+    { id: "presenca", type: "multi", s: L("Presença digital"), l: L("O que o negócio já tem?"),
+      o: opts("Instagram", "Página no Facebook", "Ficha no Google (Google Meu Negócio)", "Site", "WhatsApp Business", "TikTok", "Ainda não tenho nada disso") },
+    { id: "anuncios", type: "single", s: L("Anúncios"), l: L("Já fez anúncios pagos?"),
+      o: opts({ k: "nunca", br: "Nunca" }, { k: "impulsionei", br: "Só impulsionei publicações" }, { k: "gestor", br: "Já fiz com uma agência ou gestor" }, { k: "hoje", br: "Faço anúncios hoje" }) },
+    { id: "anuncios_exp", type: "textarea", s: L("Experiência com anúncios"), l: L("Como foi essa experiência? O que funcionou e o que não funcionou?"),
+      show: a => a.anuncios && a.anuncios !== "nunca" },
+    { id: "dificuldade", type: "multi", other: true, max: 3, s: L("Maiores dificuldades"), l: L("Quais são as maiores dificuldades hoje?"), h: L("Escolha até 3."),
+      o: opts("Poucos clientes novos", "Horários vagos na agenda", "Muitas mensagens e poucas vendas", "Clientes só perguntam o preço", "Falta de tempo para as redes sociais", "Não sei o que publicar", "O Instagram não traz clientes", "Não sei de onde vêm os clientes", { k: "outro", br: "Outro" }) }
+  ]},
+  { t: L("O seu <em>objetivo</em>"), qs: [
+    { id: "objetivo", type: "single", other: true, s: L("Objetivo principal"), l: L("Qual é o principal objetivo para os próximos 3 meses?"),
+      o: opts("Atrair clientes novos", "Preencher horários vagos", "Vender um produto ou serviço específico", "Lançar algo novo", "Tornar a marca mais conhecida", "Fazer os clientes voltarem mais vezes", { k: "outro", br: "Outro" }) },
+    { id: "meta", type: "text", s: L("Meta"), l: L("Se tudo correr bem, como seria o resultado?", "Se tudo correr bem, como seria o resultado?"),
+      h: L("Coloque um número, se possível."), ph: L("Ex.: 20 clientes novos por mês") },
+    { id: "prazo", type: "single", s: L("Urgência"), l: L("Para quando precisa de resultados?"),
+      o: opts("É urgente", "Nos próximos 30 dias", "Nos próximos 3 meses", "Sem pressa, quero estruturar bem") }
+  ]},
+  { t: L("O que <em>procura</em>"), qs: [
+    { id: "servicos", type: "multi", req: true, s: L("Interesse em"), l: L("Em que precisa de ajuda?"), h: L("Pode escolher mais de uma opção."),
+      o: opts({ k: "trafego", br: "Anúncios pagos (Instagram, Facebook, Google)" }, { k: "social", br: "Gestão das redes sociais e conteúdo" },
+              { k: "google", br: "Ficha no Google (Google Meu Negócio)" }, { k: "site", br: "Site ou página de vendas" },
+              { k: "whatsapp", br: "WhatsApp Business e respostas automáticas" }, { k: "marca", br: "Logo e identidade visual" },
+              { k: "video", br: "Edição de vídeos e Reels" }, { k: "naosei", br: "Ainda não sei, quero uma orientação" }) },
+    { id: "verba", type: "single", s: L("Verba para anúncios/mês"), l: L("Quanto pode investir por mês em anúncios?"),
+      h: L("Valor pago diretamente ao Instagram/Google, separado do serviço."), show: a => svc(a, "trafego", "naosei"),
+      o: money(["Até R$ 500", "R$ 500 a R$ 1.500", "R$ 1.500 a R$ 3.000", "R$ 3.000 a R$ 6.000", "Mais de R$ 6.000", "Ainda não sei"],
+               ["Até 150 €", "150 € a 300 €", "300 € a 600 €", "600 € a 1.000 €", "Mais de 1.000 €", "Ainda não sei"]) },
+    { id: "plataformas", type: "multi", s: L("Onde anunciar"), l: L("Onde quer anunciar?"), show: a => svc(a, "trafego"),
+      o: opts("Instagram e Facebook", "Google", "TikTok", "YouTube", "Não sei, quero uma recomendação") },
+    { id: "destino", type: "single", s: L("Destino do contato", "Destino do contacto"), l: L("Quando alguém se interessar pelo anúncio, para onde deve ir?"), show: a => svc(a, "trafego"),
+      o: opts("WhatsApp", "Mensagem no Instagram", L("Formulário de contato", "Formulário de contacto"), "Site ou loja online", L("Ligação", "Chamada telefónica"), "Não sei") },
+    { id: "quemproduz", type: "single", s: L("Quem cria o conteúdo"), l: L("Hoje, quem cria o conteúdo das redes sociais?"), show: a => svc(a, "social", "video"),
+      o: opts("Eu mesmo(a)", L("Alguém da equipe", "Alguém da equipa"), "Uma agência ou freelancer", "Ninguém, as redes estão paradas") },
+    { id: "material", type: "single", s: L("Fotos e vídeos"), l: L("Tem fotos e vídeos reais do negócio e dos trabalhos?"), show: a => svc(a, "social", "video", "trafego", "google"),
+      o: opts("Sim, tenho bastante", "Tenho alguns", "Quase nada", "Não tenho") },
+    { id: "aparecer", type: "single", s: L("Aparecer em vídeo"), l: L("Fica confortável aparecendo em vídeos?", "Está à vontade para aparecer em vídeos?"), show: a => svc(a, "social", "video"),
+      o: opts("Sim", "Às vezes", "Prefiro não aparecer") },
+    { id: "site_atual", type: "single", s: L("Site atual"), l: L("Já tem site ou domínio?"), show: a => svc(a, "site"),
+      o: opts("Tenho site e quero melhorar", "Tenho só o domínio", "Não tenho nada") },
+    { id: "marca_atual", type: "single", s: L("Logo atual"), l: L("Já tem logo?"), show: a => svc(a, "marca"),
+      o: opts("Tenho e quero manter", "Tenho, mas quero renovar", "Não tenho") }
+  ]},
+  { t: L("O seu <em>atendimento</em>"), qs: [
+    { id: "quemresponde", type: "single", s: L("Quem responde"), l: L("Quem responde às mensagens dos clientes?"),
+      o: opts("Eu", L("Alguém da equipe", "Alguém da equipa"), L("Secretária ou recepção", "Secretária ou receção"), "Ninguém em específico") },
+    { id: "resposta", type: "single", s: L("Tempo de resposta"), l: L("Em quanto tempo costuma responder?"),
+      o: opts("Em minutos", "Em poucas horas", "No mesmo dia", "No dia seguinte ou mais") },
+    { id: "registo", type: "single", s: L("Organização da agenda"), l: L("Como organiza a agenda ou os pedidos?"),
+      o: opts("Agenda em papel", "No próprio WhatsApp", L("Planilha", "Folha de cálculo"), L("Aplicativo ou sistema de agendamento", "Aplicação ou programa de agendamento"), "Não tenho um sistema") },
+    { id: "rastreio", type: "single", s: L("Sabe a origem de cada cliente"), l: L("Sabe dizer de onde veio cada cliente novo?"),
+      o: opts(L("Sim, registro sempre", "Sim, registo sempre"), "Às vezes", "Não") }
+  ]},
+  { t: L("<em>Investimento</em> e decisão"), qs: [
+    { id: "orcamento", type: "single", s: L("Orçamento total/mês"), l: L("Quanto pode investir por mês em marketing, no total?"),
+      h: L("Serviço + anúncios, somados."),
+      o: money(["Até R$ 1.000", "R$ 1.000 a R$ 2.500", "R$ 2.500 a R$ 5.000", "R$ 5.000 a R$ 10.000", "Mais de R$ 10.000", "Prefiro conversar"],
+               ["Até 300 €", "300 € a 600 €", "600 € a 1.200 €", "1.200 € a 2.500 €", "Mais de 2.500 €", "Prefiro conversar"]) },
+    { id: "decide", type: "single", s: L("Quem decide"), l: L("Quem decide a contratação?"),
+      o: opts("Eu", "Eu e um(a) sócio(a)", "Outra pessoa") },
+    { id: "receios", type: "multi", other: true, s: L("Preocupações"), l: L("O que mais o preocupa ao contratar marketing?"),
+      o: opts("Já gastei e não tive resultado", "Não sei se funciona no meu ramo", "O preço", "Ficar preso num contrato longo", "Não ter tempo para acompanhar", L("Não entender os relatórios", "Não perceber os relatórios"), { k: "outro", br: "Outro" }) },
+    { id: "extra", type: "textarea", s: L("Observações"), l: L("Há mais alguma coisa que eu deva saber?") }
+  ]},
+  { t: L("O seu <em>contato</em>", "O seu <em>contacto</em>"), qs: [
+    { id: "nome", type: "text", req: true, s: L("Nome"), l: L("O seu nome") },
+    { id: "whatsapp", type: "tel", req: true, s: L("WhatsApp"), l: L("WhatsApp"), ph: L("Ex.: +55 92 99999-9999", "Ex.: +351 912 345 678") },
+    { id: "email", type: "email", s: L("E-mail"), l: L("E-mail") },
+    { id: "horario", type: "single", s: L("Melhor horário"), l: L("Melhor horário para conversarmos"),
+      o: opts("Manhã", "Tarde", L("Final do dia", "Fim do dia"), "Qualquer horário") }
+  ]}
+];
+
+const UI = {
+  introTitle: L("Vamos entender o que o seu negócio <em>precisa</em>", "Vamos perceber o que o seu negócio <em>precisa</em>"),
+  introLead: L("Antes de qualquer proposta, quero conhecer o seu negócio. Com estas respostas preparo uma recomendação feita para você, sem pacotes genéricos.",
+               "Antes de qualquer proposta, quero conhecer o seu negócio. Com estas respostas preparo uma recomendação à sua medida, sem pacotes genéricos."),
+  p1: L("Leva cerca de 5 minutos"), p2: L("Quase tudo é de escolher, com espaço para escrever"),
+  p3: L("Se não souber alguma resposta, pode deixar em branco"), p4: L("As respostas são confidenciais"),
+  start: L("Começar"), resume: L("Continuar de onde parei"), restart: L("Recomeçar"),
+  step: L("Etapa"), of: L("de"), back: L("Voltar"), next: L("Continuar"), send: L("Concluir"),
+  required: L("Esta resposta é obrigatória."), other: L("Escreva aqui"), maxed: L("Pode escolher até 3."),
+  doneTitle: L("Obrigado, <em>{n}</em>!"),
+  doneLead: L("Falta só um passo: envie as respostas pelo WhatsApp. Analiso tudo e entro em contato em até 2 dias úteis com uma recomendação.",
+              "Falta só um passo: envie as respostas pelo WhatsApp. Analiso tudo e entro em contacto em até 2 dias úteis com uma recomendação."),
+  doneLeadMail: L("Recebi as suas respostas. Analiso tudo e entro em contato em até 2 dias úteis com uma recomendação.",
+                  "Recebi as suas respostas. Analiso tudo e entro em contacto em até 2 dias úteis com uma recomendação."),
+  waSecondary: L("Prefere falar agora? Chame no WhatsApp"), sending: L("Enviando as suas respostas…", "A enviar as suas respostas…"),
+  mailFail: L("Não consegui enviar automaticamente. Use o botão do WhatsApp abaixo para me mandar as respostas.",
+              "Não consegui enviar automaticamente. Use o botão do WhatsApp abaixo para me enviar as respostas."),
+  wa: L("Enviar pelo WhatsApp"), copy: L("Copiar respostas"), copied: L("Respostas copiadas."),
+  copyFail: L("Não foi possível copiar. Selecione o texto abaixo e copie manualmente."),
+  mailOk: L("Respostas enviadas com sucesso."), edit: L("Rever respostas"),
+  foot: L("Fábio Belmar · Gestão de tráfego e marketing digital")
+};
+
+const KEY = "fb-diagnostico-v1";
+const S = { lang: "br", step: -1, a: {}, o: {} };
+const t = x => (x && typeof x === "object" && "br" in x) ? x[S.lang] : x;
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const optsOf = q => Array.isArray(q.o) ? q.o : q.o[S.lang];
+const visible = q => !q.show || q.show(S.a);
+
+function load() {
+  try { const d = JSON.parse(localStorage.getItem(KEY) || "null"); if (d) { S.a = d.a || {}; S.o = d.o || {}; S.saved = d.step ?? -1; if (d.lang) S.lang = d.lang; } } catch (e) {}
+  const h = location.hash.replace("#", "");
+  if (h === "pt" || h === "br") S.lang = h;
+  else if (!S.saved && /^pt-PT/i.test(navigator.language || "")) S.lang = "pt";
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify({ a: S.a, o: S.o, step: S.step, lang: S.lang })); } catch (e) {} }
+
+function field(q) {
+  const req = q.req ? ' <span class="req" aria-hidden="true">*</span>' : "";
+  const help = q.h ? `<span class="help" id="h-${q.id}">${esc(t(q.h))}</span>` : "";
+  let body = "";
+  if (q.type === "single" || q.type === "multi") {
+    const type = q.type === "single" ? "radio" : "checkbox";
+    const cur = S.a[q.id];
+    body = `<div class="chips" role="${q.type === "single" ? "radiogroup" : "group"}" aria-labelledby="l-${q.id}">` +
+      optsOf(q).map((op, i) => {
+        const on = q.type === "single" ? cur === op.k : (cur || []).includes(op.k);
+        return `<label class="chip"><input type="${type}" id="q-${q.id}-${i}" name="${q.id}" value="${esc(op.k)}"${on ? " checked" : ""}><span>${esc(t(op.l))}</span></label>`;
+      }).join("") + `</div>`;
+    const otherOn = q.other && (q.type === "single" ? cur === "outro" : (cur || []).includes("outro"));
+    if (otherOn) body += `<input type="text" class="other" id="o-${q.id}" data-other="${q.id}" placeholder="${esc(t(UI.other))}" value="${esc(S.o[q.id])}">`;
+  } else if (q.type === "textarea") {
+    body = `<textarea id="q-${q.id}" name="${q.id}" placeholder="${esc(t(q.ph) || "")}">${esc(S.a[q.id])}</textarea>`;
+  } else {
+    const ac = { nome: "name", email: "email", whatsapp: "tel" }[q.id] || "off";
+    body = `<input type="${q.type}" id="q-${q.id}" name="${q.id}" autocomplete="${ac}" placeholder="${esc(t(q.ph) || "")}" value="${esc(S.a[q.id])}">`;
+  }
+  const lab = (q.type === "single" || q.type === "multi") ? `<span class="label" id="l-${q.id}">${esc(t(q.l))}${req}</span>` : `<label class="label" id="l-${q.id}" for="q-${q.id}">${esc(t(q.l))}${req}</label>`;
+  return `<div class="q" data-q="${q.id}">${lab}${help}${body}<div class="err" id="e-${q.id}" hidden></div></div>`;
+}
+
+function render() {
+  const app = document.getElementById("app");
+  document.querySelectorAll(".lang button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.lang === S.lang)));
+  document.documentElement.lang = S.lang === "pt" ? "pt-PT" : "pt-BR";
+  document.getElementById("foot").textContent = t(UI.foot);
+
+  if (S.step === -1) {
+    const resumable = S.saved > 0 && S.saved < STEPS.length;
+    app.innerHTML = `<h1>${t(UI.introTitle)}</h1><p class="lead">${esc(t(UI.introLead))}</p>
+      <ul class="points"><li>${esc(t(UI.p1))}</li><li>${esc(t(UI.p2))}</li><li>${esc(t(UI.p3))}</li><li>${esc(t(UI.p4))}</li></ul>
+      <div class="nav">${resumable ? `<button type="button" class="btn ghost" id="restart">${esc(t(UI.restart))}</button>` : ""}
+      <button type="button" class="btn primary" id="start">${esc(t(resumable ? UI.resume : UI.start))}</button></div>`;
+    document.getElementById("start").onclick = () => go(resumable ? S.saved : 0);
+    const r = document.getElementById("restart"); if (r) r.onclick = () => { S.a = {}; S.o = {}; S.saved = -1; go(0); };
+    return;
+  }
+  if (S.step >= STEPS.length) return renderDone();
+
+  const st = STEPS[S.step], n = STEPS.length;
+  app.innerHTML = `<div class="progress"><div class="meta"><span>${esc(t(UI.step))} ${S.step + 1} ${esc(t(UI.of))} ${n}</span><span>${Math.round((S.step) / n * 100)}%</span></div>
+      <div class="bar"><i style="width:${(S.step + 1) / n * 100}%"></i></div></div>
+    <h2>${t(st.t)}</h2>
+    <form id="f" novalidate>${st.qs.filter(visible).map(field).join("")}
+      <div class="nav">${S.step > 0 ? `<button type="button" class="btn ghost" id="back">${esc(t(UI.back))}</button>` : ""}
+      <button type="submit" class="btn primary" id="next">${esc(t(S.step === n - 1 ? UI.send : UI.next))}</button></div></form>`;
+  const f = document.getElementById("f");
+  f.addEventListener("change", onChange);
+  f.addEventListener("input", onInput);
+  f.addEventListener("submit", e => { e.preventDefault(); if (validate()) go(S.step + 1); });
+  const b = document.getElementById("back"); if (b) b.onclick = () => go(S.step - 1);
+}
+
+function onChange(e) {
+  const el = e.target, id = el.name; if (!id) return;
+  const q = STEPS[S.step].qs.find(x => x.id === id); if (!q) return;
+  if (q.type === "single") S.a[id] = el.value;
+  else if (q.type === "multi") {
+    const vals = [...document.querySelectorAll(`input[name="${id}"]:checked`)].map(i => i.value);
+    if (q.max && vals.length > q.max) { el.checked = false; showErr(id, t(UI.maxed)); return; }
+    S.a[id] = vals; showErr(id, "");
+  }
+  save();
+  if ((q.type === "single" || q.type === "multi")) {
+    const y = window.scrollY; const focusId = el.id;
+    render(); window.scrollTo(0, y);
+    const back = document.getElementById(focusId); if (back) back.focus({ preventScroll: true });
+    const ot = document.getElementById("o-" + id); if (ot && el.value === "outro" && (el.checked)) ot.focus({ preventScroll: true });
+  }
+}
+function onInput(e) {
+  const el = e.target;
+  if (el.dataset.other) S.o[el.dataset.other] = el.value;
+  else if (el.name && (el.tagName === "TEXTAREA" || el.type === "text" || el.type === "tel" || el.type === "email")) S.a[el.name] = el.value;
+  if (el.name) showErr(el.name, "");
+  save();
+}
+function showErr(id, msg) { const e = document.getElementById("e-" + id); if (e) { e.textContent = msg; e.hidden = !msg; } }
+function validate() {
+  let first = null;
+  STEPS[S.step].qs.filter(visible).forEach(q => {
+    const v = S.a[q.id];
+    const empty = q.type === "multi" ? !(v && v.length) : !(v && String(v).trim());
+    if (q.req && empty) { showErr(q.id, t(UI.required)); first = first || q.id; }
+  });
+  if (first) { const el = document.querySelector(`[data-q="${first}"]`); el && el.scrollIntoView({ behavior: "smooth", block: "center" }); }
+  return !first;
+}
+function go(i) { S.step = Math.max(-1, Math.min(i, STEPS.length)); S.saved = S.step; save(); render(); window.scrollTo(0, 0); if (S.step === STEPS.length) sendMail(); }
+
+function answerText(q) {
+  const v = S.a[q.id];
+  if (q.type === "single" || q.type === "multi") {
+    const list = q.type === "single" ? (v ? [v] : []) : (v || []);
+    if (!list.length) return "";
+    return list.map(k => {
+      if (k === "outro") return (S.lang === "pt" ? "Outro" : "Outro") + (S.o[q.id] ? ": " + S.o[q.id].trim() : "");
+      const op = optsOf(q).find(o => o.k === k); return op ? t(op.l) : k;
+    }).join("; ");
+  }
+  return (v || "").trim();
+}
+function summary(plain) {
+  const B = x => plain ? x : `*${x}*`;
+  const lines = [B("Diagnóstico do negócio"), `${S.a.negocio || ""}${S.a.local ? " · " + S.a.local : ""} (${S.lang === "pt" ? "Portugal" : "Brasil"})`];
+  STEPS.forEach((st, i) => {
+    const rows = st.qs.filter(visible).map(q => { const a = answerText(q); return a ? `• ${t(q.s)}: ${a}` : ""; }).filter(Boolean);
+    if (rows.length) lines.push("", B(`${i + 1}. ${t(st.t).replace(/<[^>]+>/g, "")}`), ...rows);
+  });
+  return lines.join("\n");
+}
+
+function renderDone() {
+  const app = document.getElementById("app");
+  const txt = summary();
+  const wa = `https://wa.me/${CONFIG.WHATSAPP.replace(/\D/g, "")}?text=${encodeURIComponent(txt)}`;
+  const name = esc((S.a.nome || "").trim().split(/\s+/)[0] || "");
+  const hasMail = !!CONFIG.FORMSPREE_ID, ok = S.mailed || S.mailState === "ok";
+  app.innerHTML = `<h1>${t(UI.doneTitle).replace("{n}", name)}</h1><p class="lead">${esc(t(hasMail && ok ? UI.doneLeadMail : UI.doneLead))}</p>
+    <div class="done-box">
+      <a class="btn ${hasMail && ok ? "ghost" : "primary"}" id="wa" href="${wa}" target="_blank" rel="noopener">${esc(t(hasMail && ok ? UI.waSecondary : UI.wa))}</a>
+      <button type="button" class="btn ghost" id="copy">${esc(t(UI.copy))}</button>
+      <div class="status" id="status" role="status"></div>
+      <pre id="sum">${esc(txt)}</pre>
+    </div>
+    <div class="nav"><button type="button" class="btn ghost" id="edit">${esc(t(UI.edit))}</button></div>`;
+  document.getElementById("copy").onclick = async () => {
+    const st = document.getElementById("status");
+    try { await navigator.clipboard.writeText(txt); st.textContent = t(UI.copied); }
+    catch (e) { const r = document.createRange(); r.selectNodeContents(document.getElementById("sum")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); st.textContent = t(UI.copyFail); }
+  };
+  document.getElementById("edit").onclick = () => go(0);
+  const stt = document.getElementById("status");
+  if (hasMail) stt.textContent = ok ? t(UI.mailOk) : S.mailState === "fail" ? t(UI.mailFail) : t(UI.sending);
+}
+
+async function sendMail() {
+  if (!CONFIG.FORMSPREE_ID || S.mailed) return;
+  S.mailState = "sending";
+  const who = (S.a.nome || "").trim(), biz = (S.a.negocio || "").trim();
+  const data = {
+    _subject: `Novo diagnóstico: ${who || "sem nome"}${biz ? " – " + biz : ""} (${S.lang === "pt" ? "PT" : "BR"})`,
+    Nome: who, WhatsApp: answerText(STEPS.flatMap(s => s.qs).find(q => q.id === "whatsapp")),
+    "E-mail": (S.a.email || "").trim(), Negócio: biz, Versão: S.lang === "pt" ? "Portugal" : "Brasil",
+    Respostas: "\n" + summary(true)
+  };
+  if (S.a.email) data._replyto = S.a.email;
+  try {
+    const r = await fetch(`https://formspree.io/f/${CONFIG.FORMSPREE_ID}`, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(data) });
+    S.mailState = r.ok ? "ok" : "fail"; if (r.ok) S.mailed = true;
+  } catch (e) { S.mailState = "fail"; }
+  if (S.step === STEPS.length) renderDone();
+}
+
+document.querySelectorAll(".lang button").forEach(b => b.onclick = () => {
+  S.lang = b.dataset.lang; try { history.replaceState(null, "", "#" + S.lang); } catch (e) { location.hash = S.lang; } save(); render();
+});
+window.addEventListener("hashchange", () => { const h = location.hash.replace("#", ""); if ((h === "pt" || h === "br") && h !== S.lang) { S.lang = h; render(); } });
+if (CONFIG.LOGO_URL) document.getElementById("logo").innerHTML = `<img src="${esc(CONFIG.LOGO_URL)}" alt="Logo">`;
+load(); render();
+</script>
+
+</body></html>
